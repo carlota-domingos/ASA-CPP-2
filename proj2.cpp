@@ -16,34 +16,38 @@ public:
             graph[i][f]=1; 
     }
 
-    void itdfs(int node, std::vector<int>& color, std::list<int>& order) {
+    void itdfs(int node, std::vector<int>& colour, std::list<int>& order) {
         std::stack<int> queue;
+
         queue.push(node);
 
         while(!queue.empty()){
             int current = queue.top();
-            queue.pop();
 
-            if(color[current]==1){
-                visited[current] = true;
-                order.push_front(current);
-               
-                for (int neighbour = 1; neighbour <= nodes; ++neighbour) {
-                    
-                    if (graph[current][neighbour]!=0 && !visited[neighbour]) {
+            if(colour[current]==0){
+                colour[current] = 1;
+            
+                for (int neighbour = nodes; neighbour >= 1; neighbour--) {
+                    if (graph[current][neighbour]==1 && colour[neighbour]!=2) {
                         queue.push(neighbour);
-    
+                        break;
                     }
                 }
+            } else if(colour[current]==1) {
+                colour[current]=2;
+                order.push_front(current);
+                queue.pop();
+            } else {
+                queue.pop();
             }
         }
     }
 
     void dfs(std::list<int>& order){
-        std::vector<bool> visited(nodes+1,false);
+        std::vector<int> colour(nodes+1,0);
         for(int i=1;i<=nodes;i++){
-            if(!visited[i]){
-                itdfs(i,visited,order);
+            if(colour[i]==0){
+                itdfs(i,colour,order);
             }
         }
         for(int i:order){
@@ -52,63 +56,17 @@ public:
         
     }
 
-    void transpose() {
-        std::vector<int> nodeline (nodes+1,0);
-        std::vector<std::vector<int>> transposed(nodes+1,nodeline);
-        for (int i = 1; i <= nodes; i++) {
-            for (int j = 1; j <= nodes; j++) {
-                transposed[i][j] = graph[j][i];
-            }
-        }
-        graph = transposed;
-    }
 
 
 
-    GraphMatrix getSCCGraph(){
-        std::vector<std::list<int>> components;
-        int ncomponents=0;
-
-        std::vector<bool> visited(nodes+1,false);
+    int getMaxJumps(){
+        std::vector<int> colour(nodes+1,false);
         std::list<int> order;
 
         dfs(order);
-        for(int i :order){
-            printf("%d",i);
-        }
-        transpose();
 
-        while(!order.empty()){
-            int node = *order.begin();
-            order.pop_front();
-
-            if(!visited[node]){
-                std::list<int> currSCC;
-                ncomponents++;
-                itdfs(node,visited,currSCC);
-                components.push_back(currSCC);
-            }
-        }
-
-        GraphMatrix SCCgraph(ncomponents);
         
-        for(int i=0; i< ncomponents; i++){
-            std::list<int> curSCC= components[i];
-            for(std::list<int>::iterator it= curSCC.begin();it!=curSCC.end();it++){
-                for(int child: graph[*it]){
-                    for (int j = 0; j < ncomponents; ++j) {
-                        std::list<int> visitingSCC = components[j];
-                        if (std::find(visitingSCC.begin(), visitingSCC.end(), child) != visitingSCC.end()) { 
-                            SCCgraph.addEdge(j,i); 
-                            break;
-                        
-                        }
-                    }
-                }
-                
-            }
-        }
-        return SCCgraph;
+        return 0;
     }
 };
 
@@ -122,15 +80,14 @@ int main(){
         tugaNet.addEdge(user1,user2);
         nrelations--;
     }
-   
-    
-    tugaNet=tugaNet.getSCCGraph();
     for (int i = 1; i <= tugaNet.nodes; i++) {
-            for (int j = 1; j <= tugaNet.nodes; j++) {
-                printf("%d ", tugaNet.graph[i][j]);
-            }
-            printf("\n");
+        for (int j = 1; j <= tugaNet.nodes; j++) {
+            printf("%d ", tugaNet.graph[i][j]);
         }
+        printf("\n");
+    }
+    std::list<int> order;
+    tugaNet.dfs(order);
     return 0;
     
 }
