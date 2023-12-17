@@ -4,16 +4,17 @@
 #include <stack>
 #include <algorithm>
 
-class GraphMatrix {
+class GraphList {
 public:
     int nodes;
-    std::vector<std::vector<int>> graph;
-    GraphMatrix(int mnodes) : nodes(mnodes), graph(nodes + 1, std::vector<int>(nodes + 1, 0)) {}
+    std::vector<std::list<int>> graph;
+    std::vector<std::list<int>> transposedGraph;
+    GraphList(int mnodes) : nodes(mnodes), graph(nodes + 1), transposedGraph(nodes+1) {}
 
 
     void addEdge(int i, int f){
-        if(graph[i][f]==0)
-            graph[i][f]=1; 
+        graph[i].push_front(f);
+        transposedGraph[f].push_front(i);
     }
 
     void itdfs(int node, std::vector<int>& colour, std::list<int>& order) {
@@ -26,13 +27,12 @@ public:
 
             if(colour[current]==0){
                 colour[current] = 1;
-            
-                for (int neighbour = nodes; neighbour >= 1; neighbour--) {
-                    if (graph[current][neighbour]==1 && colour[neighbour]!=2) {
-                        queue.push(neighbour);
-                        break;
+                for (std::list<int>::iterator neighbour=graph[current].begin();neighbour!=graph[current].end();neighbour++) {
+                    if (colour[*neighbour]!=2) {
+                        queue.push(*neighbour);
                     }
                 }
+                
             } else if(colour[current]==1) {
                 colour[current]=2;
                 order.push_front(current);
@@ -60,13 +60,13 @@ public:
 
 
     int getMaxJumps(){
-        std::vector<int> colour(nodes+1,false);
+        std::vector<int> parent(nodes+1,0);
+        std::vector<int> max_jump_node(nodes+1,0);
         std::list<int> order;
-
+        int max_jump=0;
         dfs(order);
-
         
-        return 0;
+        return max_jump;
     }
 };
 
@@ -74,20 +74,14 @@ int main(){
     int numusers,nrelations;
     int user1, user2;
     scanf("%d %d", &numusers, &nrelations);
-    GraphMatrix tugaNet(numusers);
+    GraphList tugaNet(numusers);
     while(nrelations!=0){
         scanf("%d %d", &user1, &user2);
         tugaNet.addEdge(user1,user2);
         nrelations--;
     }
-    for (int i = 1; i <= tugaNet.nodes; i++) {
-        for (int j = 1; j <= tugaNet.nodes; j++) {
-            printf("%d ", tugaNet.graph[i][j]);
-        }
-        printf("\n");
-    }
-    std::list<int> order;
-    tugaNet.dfs(order);
+
+    printf("%d\n", tugaNet.getMaxJumps());
     return 0;
     
 }
