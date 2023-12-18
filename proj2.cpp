@@ -1,4 +1,4 @@
-#include <iostream>
+#include <cstdio>
 #include <vector>
 #include <list>
 #include <stack>
@@ -6,95 +6,92 @@
 class GraphList {
 public:
     int nodes;
-    std::vector<std::list<int>> graph;
-    std::vector<std::list<int>> transposedGraph;
-    GraphList(int mnodes) : nodes(mnodes), graph(nodes + 1), transposedGraph(nodes+1) {}
+    std::vector<std::vector<int>> graph;
+    std::vector<std::vector<int>> transposedGraph;
+    std::vector<int> colour;
+    std::vector<int> parents;
+    std::vector<int> max_jump_node;
+    GraphList(int mnodes) : nodes(mnodes), graph(nodes + 1), transposedGraph(nodes+1) ,
+                           colour(nodes + 1, 0), parents(nodes + 1, 0), max_jump_node(nodes+1,0) {}
+    
 
     //adiciona a adjacencia noo grafo normal e no transposto
     void addEdge(int i, int f){
-        graph[i].push_front(f);
-        transposedGraph[f].push_front(i);
+        graph[i].push_back(f);
+        transposedGraph[f].push_back(i);
     }
 
-    void dfsVisit(int node, std::vector<int>& colour, std::list<int>& order) {
-        std::stack<int> queue;
-        std::list<int>::iterator neighbour;
-        queue.push(node);
-        int current;
-        while(!queue.empty()){
-            current = queue.top();
+    void dfs(std::stack<int>& order,std::stack<int>& queue){
+        for(int node=1 ; node<=nodes ; node++){
+            if(colour[node]==0){ //se nó n for visitado 
+                                //fzr dfs iterativa
+                queue.push(node);
+                int current;
+                while(!queue.empty()){
+                    current = queue.top();
 
-            if(colour[current]==0){
-                colour[current] = 1;
-                for (neighbour=graph[current].begin();neighbour!=graph[current].end();neighbour++) {
-                    if (colour[*neighbour]!=2) {
-                        queue.push(*neighbour);
+                    if(colour[current]==0){//if not visited
+                        colour[current] = 1; //marks node as visited
+                        for (int neighbour: graph[current]) { //visitar vizinho
+                            if (colour[neighbour]==0) {
+                                queue.push(neighbour);//
+                            }
+                        }
+                    } else if(colour[current]==1) {
+                        colour[current]=2; //marks node as closed
+                        order.push(current);
+                        queue.pop();
+                    } else {
+                        queue.pop();
                     }
                 }
-                
-            } else if(colour[current]==1) {
-                colour[current]=2;
-                order.push_front(current);
-                queue.pop();
-            } else {
-                queue.pop();
-            }
-        }
-    }
-
-    void dfs(std::list<int>& order){
-        std::vector<int> colour(nodes+1,0);
-        for(int i=1;i<=nodes;i++){
-            if(colour[i]==0){
-                dfsVisit(i,colour,order);
             }
         }        
     }
 
-    int second_dfs(int node, std::vector<int>& parents, std::vector<int>& max_jump_node){
-        std::stack<int> queue;
-        queue.push(node);
-        int parent= node;
-        int value =0;
-        std::list<int>::iterator neighbour;
-        while(!queue.empty()){
-            node = queue.top();
-            queue.pop();
-            parents[node]=parent;
-            for (neighbour=transposedGraph[node].begin();neighbour!=transposedGraph[node].end();neighbour++) {
-                if(parents[*neighbour]!=parent){
-                    if(parents[*neighbour]!=0){
-                        if (max_jump_node[parents[*neighbour]]>=value)
-                            value = max_jump_node[parents[*neighbour]]+1;
-                    } else {
-                        queue.push(*neighbour);
+    int second_dfs(std::stack<int>& order,std::stack<int>& queue){
+        int parent;
+        int value;
+        int max_jump=0;
+        int node;
+        while(!order.empty()){
+            node=order.top();
+            order.pop();
+            if(parents[node]==0){//ainda nao visistado
+                queue.push(node);
+                parent= node;
+                value =0;
+              
+                while(!queue.empty()){//while da scc
+                    node = queue.top();
+                    queue.pop();
+                    parents[node]=parent;
+                    for (int neighbour: transposedGraph[node]) {
+                        if(parents[neighbour]!=parent){
+                            if(parents[neighbour]!=0){
+                                if (max_jump_node[parents[neighbour]]>=value)
+                                    value = max_jump_node[parents[neighbour]]+1;
+                            } else {
+                                queue.push(neighbour);
+                            }
+                        }
                     }
                 }
-                
-            }
-        }
-        max_jump_node[parent]=value;
-        return value;
-    }
-
-    int getMaxJumps(){
-        std::vector<int> parents(nodes+1,0);
-        std::vector<int> max_jump_node(nodes+1,0);
-        std::list<int> order;
-        int max_jump=0;
-        int node,i;
-        int max_current_SCC;
-        dfs(order);
-        while((node= *order.begin())!=0){
-            order.pop_front();
-            if(parents[node]!=0){
-                continue;
-            }else if((max_current_SCC=second_dfs(node,parents,max_jump_node))>max_jump){
-                max_jump= max_current_SCC;
+                max_jump_node[parent]=value;
+                if(max_jump_node[parent]>max_jump)
+                    max_jump= max_jump_node[parent];
             }
         }
         return max_jump;
     }
+
+    int getMaxJumps(){
+        std::stack<int> order;
+        std::stack<int> queue;
+        dfs(order,queue);
+        return second_dfs(order,queue);
+    }
+    
 };
 
 int main(){
